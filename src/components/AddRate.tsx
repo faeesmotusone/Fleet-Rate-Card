@@ -116,7 +116,7 @@ export function AddRate({ entries, setEntries }: { entries: Entry[]; setEntries:
           Pending approval{pending.length > 0 && <span className="badge">{pending.length}</span>}
         </button>
         <button className={tab === 'approved' ? 'on' : ''} onClick={() => setTab('approved')}>
-          Approved{approved.length > 0 && <span className="badge badge-green">{approved.length}</span>}
+          Approved
         </button>
       </div>
 
