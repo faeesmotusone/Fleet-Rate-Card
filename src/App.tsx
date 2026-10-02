@@ -6,6 +6,7 @@ import { AddRate } from '@/components/AddRate';
 import type { Entry } from '@/components/AddRate';
 import { About } from '@/components/About';
 import logo from '@/data/logo';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 type Tab = 'card' | 'add' | 'about';
 
@@ -41,6 +42,7 @@ export default function App() {
             </button>
           ))}
         </nav>
+        <ThemeToggle />
       </header>
       {tab === 'card' && <RateCard rows={rows} includeManual={includeManual} setIncludeManual={setIncludeManual} manualCount={entries.length} />}
       {tab === 'add' && <AddRate entries={entries} setEntries={setEntries} />}
