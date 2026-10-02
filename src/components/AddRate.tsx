@@ -7,7 +7,7 @@ import type { ManualRate } from '@/lib/supabase';
 export interface Entry {
   id: string; country: Country; city: string; type: RateType; detail: string;
   vehicle: string; rate: number; currency: string; month: string; po?: string;
-  note?: string; added_by?: string; created_at?: string;
+  note?: string; added_by?: string; created_at?: string; status: string;
 }
 
 const thisMonth = () => new Date().toISOString().slice(0, 7);
@@ -24,6 +24,7 @@ export function AddRate({ entries, setEntries }: { entries: Entry[]; setEntries:
   });
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [tab, setTab] = useState<'add' | 'pending' | 'approved'>('add');
 
   const loadRates = useCallback(async () => {
     if (!supabase) { setStatus('off'); return; }
@@ -34,6 +35,7 @@ export function AddRate({ entries, setEntries }: { entries: Entry[]; setEntries:
       detail: r.detail, vehicle: r.vehicle, rate: r.rate, currency: r.currency,
       month: r.month, po: r.po ?? undefined, note: r.note ?? undefined,
       added_by: (r as any).added_by ?? undefined, created_at: r.created_at,
+      status: (r as any).status ?? 'pending',
     })));
     setStatus('ready');
   }, [setEntries]);
@@ -66,7 +68,7 @@ export function AddRate({ entries, setEntries }: { entries: Entry[]; setEntries:
       vehicle: f.vehicle, rate, currency: cur,
       month: f.month, po: f.po.trim() || null,
       note: f.note.trim().slice(0, 200) || null,
-      added_by: name.trim(),
+      added_by: name.trim(), status: 'pending',
     });
     setSaving(false);
 
@@ -74,18 +76,28 @@ export function AddRate({ entries, setEntries }: { entries: Entry[]; setEntries:
       console.error(error);
       setMsg({ kind: 'err', text: 'The rate was not saved. Check your connection and try again.' });
     } else {
-      setMsg({ kind: 'ok', text: `Rate added: ${f.vehicle}, ${fmt(rate)} ${cur}. It now shows on the rate card.` });
+      setMsg({ kind: 'ok', text: 'Rate submitted for approval. It will appear on the rate card once approved.' });
       setF(p => ({ ...p, rate: '', po: '', note: '' }));
       loadRates();
     }
   }
 
-  async function remove(id: string) {
+  async function approve(id: string) {
     if (!supabase) return;
-    const { error } = await supabase.from('manual_rates').delete().eq('id', id);
-    if (error) setMsg({ kind: 'err', text: 'Could not remove that rate. Try again.' });
+    const { error } = await supabase.from('manual_rates').update({ status: 'approved' }).eq('id', id);
+    if (error) setMsg({ kind: 'err', text: 'Could not approve. Try again.' });
     else loadRates();
   }
+
+  async function reject(id: string) {
+    if (!supabase) return;
+    const { error } = await supabase.from('manual_rates').delete().eq('id', id);
+    if (error) setMsg({ kind: 'err', text: 'Could not remove. Try again.' });
+    else loadRates();
+  }
+
+  const pending = entries.filter(e => e.status === 'pending');
+  const approved = entries.filter(e => e.status === 'approved');
 
   if (status === 'off') return (
     <section className="panel narrow">
@@ -97,74 +109,119 @@ export function AddRate({ entries, setEntries }: { entries: Entry[]; setEntries:
   const vehiclesByClass = CLASS_ORDER.map(k => ({ k, vs: VEHICLES.filter(v => v.c === k) })).filter(g => g.vs.length);
 
   return (
-    <div className="add-layout">
-      <section className="panel">
-        <h2>Add a newly agreed rate</h2>
-        <p className="muted">For rates confirmed with a supplier before the PO reaches the monthly export. Enter the unit rate without VAT.</p>
-        <div className="form">
-          <label>Your name
-            <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Ahmed, Sarah" /></label>
-          <label>Country
-            <select value={f.country} onChange={e => { const c = e.target.value as Country; setF(p => ({ ...p, country: c, city: CITIES[c][0] })); }}>
-              <option value="KSA">Saudi Arabia (SAR)</option><option value="UAE">UAE (AED)</option><option value="International">International</option>
-            </select></label>
-          <label>City
-            <select value={f.city} onChange={e => set('city', e.target.value)}>
-              {CITIES[f.country].map(c => <option key={c}>{c}</option>)}
-            </select></label>
-          <label>Booking
-            <select value={f.type} onChange={e => set('type', e.target.value)}>
-              <option value="Daily">Daily, 12 hrs incl. driver & fuel</option>
-              <option value="Transfer">One-way transfer</option>
-            </select></label>
-          {f.type === 'Transfer' && <label>Route
-            <select value={f.detail} onChange={e => set('detail', e.target.value)}>
-              {ROUTES.map(r => <option key={r}>{r}</option>)}
-            </select></label>}
-          <label className="wide">Vehicle
-            <select value={f.vehicle} onChange={e => set('vehicle', e.target.value)}>
-              <option value="">Choose a vehicle</option>
-              {vehiclesByClass.map(g => <optgroup key={g.k} label={g.k}>{g.vs.map(v => <option key={v.n}>{v.n}</option>)}</optgroup>)}
-            </select></label>
-          <label>Rate ({cur}, excl. VAT)
-            <input inputMode="decimal" value={f.rate} onChange={e => set('rate', e.target.value.replace(/[^\d.]/g, ''))} placeholder="e.g. 950" /></label>
-          <label>Effective month
-            <input type="month" value={f.month} onChange={e => set('month', e.target.value)} /></label>
-          <label>PO number (optional)
-            <input value={f.po} onChange={e => set('po', e.target.value)} placeholder="PO-2021..." /></label>
-          <label className="wide">Note (optional)
-            <input value={f.note} maxLength={200} onChange={e => set('note', e.target.value)} placeholder="e.g. Event rate for F1 week" /></label>
-          <div className="wide form-actions">
-            <button className="primary" disabled={saving || status !== 'ready'} onClick={save}>{saving ? 'Adding...' : 'Add rate'}</button>
-            {status === 'loading' && <span className="muted small">Connecting to the database...</span>}
-          </div>
-        </div>
-        {msg && <p role="status" className={msg.kind === 'ok' ? 'notice' : 'caution'}>{msg.text}</p>}
-      </section>
+    <div className="add-page">
+      <div className="add-tabs">
+        <button className={tab === 'add' ? 'on' : ''} onClick={() => setTab('add')}>Add a rate</button>
+        <button className={tab === 'pending' ? 'on' : ''} onClick={() => setTab('pending')}>
+          Pending approval{pending.length > 0 && <span className="badge">{pending.length}</span>}
+        </button>
+        <button className={tab === 'approved' ? 'on' : ''} onClick={() => setTab('approved')}>
+          Approved{approved.length > 0 && <span className="badge badge-green">{approved.length}</span>}
+        </button>
+      </div>
 
-      <section className="panel">
-        <h2>Added rates</h2>
-        {!entries.length ? <p className="muted">No rates added yet. The first one you add appears here and on the rate card.</p> : (
-          <div className="table-scroll">
-            <table className="entries">
-              <thead><tr><th>Vehicle</th><th>Where</th><th>Booking</th><th className="num">Rate</th><th>Month</th><th>Added by</th><th></th></tr></thead>
-              <tbody>
-                {entries.map(e => (
-                  <tr key={e.id}>
-                    <td>{e.vehicle}{e.note && <div className="muted small">{e.note}</div>}</td>
-                    <td>{e.city}, {e.country}</td>
-                    <td>{e.type === 'Daily' ? 'Daily' : `Transfer, ${e.detail.toLowerCase()}`}</td>
-                    <td className="num">{fmt(e.rate)} {e.currency}</td>
-                    <td>{monthLabel(e.month)}{e.po && <div className="muted small">{e.po}</div>}</td>
-                    <td>{e.added_by || '—'}</td>
-                    <td><button className="link-btn" onClick={() => remove(e.id)}>Remove</button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {tab === 'add' && (
+        <section className="panel">
+          <h2>Add a newly agreed rate</h2>
+          <p className="muted">For rates confirmed with a supplier before the PO reaches the monthly export. Enter the unit rate without VAT. Rates need approval before they appear on the rate card.</p>
+          <div className="form">
+            <label>Your name
+              <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Ahmed, Sarah" /></label>
+            <label>Country
+              <select value={f.country} onChange={e => { const c = e.target.value as Country; setF(p => ({ ...p, country: c, city: CITIES[c][0] })); }}>
+                <option value="KSA">Saudi Arabia (SAR)</option><option value="UAE">UAE (AED)</option><option value="International">International</option>
+              </select></label>
+            <label>City
+              <select value={f.city} onChange={e => set('city', e.target.value)}>
+                {CITIES[f.country].map(c => <option key={c}>{c}</option>)}
+              </select></label>
+            <label>Booking
+              <select value={f.type} onChange={e => set('type', e.target.value)}>
+                <option value="Daily">Daily, 12 hrs incl. driver & fuel</option>
+                <option value="Transfer">One-way transfer</option>
+              </select></label>
+            {f.type === 'Transfer' && <label>Route
+              <select value={f.detail} onChange={e => set('detail', e.target.value)}>
+                {ROUTES.map(r => <option key={r}>{r}</option>)}
+              </select></label>}
+            <label className="wide">Vehicle
+              <select value={f.vehicle} onChange={e => set('vehicle', e.target.value)}>
+                <option value="">Choose a vehicle</option>
+                {vehiclesByClass.map(g => <optgroup key={g.k} label={g.k}>{g.vs.map(v => <option key={v.n}>{v.n}</option>)}</optgroup>)}
+              </select></label>
+            <label>Rate ({cur}, excl. VAT)
+              <input inputMode="decimal" value={f.rate} onChange={e => set('rate', e.target.value.replace(/[^\d.]/g, ''))} placeholder="e.g. 950" /></label>
+            <label>Effective month
+              <input type="month" value={f.month} onChange={e => set('month', e.target.value)} /></label>
+            <label>PO number (optional)
+              <input value={f.po} onChange={e => set('po', e.target.value)} placeholder="PO-2021..." /></label>
+            <label className="wide">Note (optional)
+              <input value={f.note} maxLength={200} onChange={e => set('note', e.target.value)} placeholder="e.g. Event rate for F1 week" /></label>
+            <div className="wide form-actions">
+              <button className="primary" disabled={saving || status !== 'ready'} onClick={save}>{saving ? 'Submitting...' : 'Submit for approval'}</button>
+              {status === 'loading' && <span className="muted small">Connecting to the database...</span>}
+            </div>
           </div>
-        )}
-      </section>
+          {msg && <p role="status" className={msg.kind === 'ok' ? 'notice' : 'caution'}>{msg.text}</p>}
+        </section>
+      )}
+
+      {tab === 'pending' && (
+        <section className="panel">
+          <h2>Pending approval</h2>
+          <p className="muted">These rates have been submitted but not yet approved. Approved rates appear on the rate card.</p>
+          {!pending.length ? <p className="muted">No rates waiting for approval.</p> : (
+            <div className="table-scroll">
+              <table className="entries">
+                <thead><tr><th>Vehicle</th><th>Where</th><th>Booking</th><th className="num">Rate</th><th>Month</th><th>Added by</th><th></th></tr></thead>
+                <tbody>
+                  {pending.map(e => (
+                    <tr key={e.id}>
+                      <td>{e.vehicle}{e.note && <div className="muted small">{e.note}</div>}</td>
+                      <td>{e.city}, {e.country}</td>
+                      <td>{e.type === 'Daily' ? 'Daily' : `Transfer, ${e.detail.toLowerCase()}`}</td>
+                      <td className="num">{fmt(e.rate)} {e.currency}</td>
+                      <td>{monthLabel(e.month)}{e.po && <div className="muted small">{e.po}</div>}</td>
+                      <td>{e.added_by || '\u2014'}</td>
+                      <td className="action-btns">
+                        <button className="approve-btn" onClick={() => approve(e.id)}>Approve</button>
+                        <button className="reject-btn" onClick={() => reject(e.id)}>Reject</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
+
+      {tab === 'approved' && (
+        <section className="panel">
+          <h2>Approved rates</h2>
+          <p className="muted">These rates are live on the rate card.</p>
+          {!approved.length ? <p className="muted">No approved rates yet.</p> : (
+            <div className="table-scroll">
+              <table className="entries">
+                <thead><tr><th>Vehicle</th><th>Where</th><th>Booking</th><th className="num">Rate</th><th>Month</th><th>Added by</th><th></th></tr></thead>
+                <tbody>
+                  {approved.map(e => (
+                    <tr key={e.id}>
+                      <td>{e.vehicle}{e.note && <div className="muted small">{e.note}</div>}</td>
+                      <td>{e.city}, {e.country}</td>
+                      <td>{e.type === 'Daily' ? 'Daily' : `Transfer, ${e.detail.toLowerCase()}`}</td>
+                      <td className="num">{fmt(e.rate)} {e.currency}</td>
+                      <td>{monthLabel(e.month)}{e.po && <div className="muted small">{e.po}</div>}</td>
+                      <td>{e.added_by || '\u2014'}</td>
+                      <td><button className="reject-btn" onClick={() => reject(e.id)}>Remove</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
     </div>
   );
 }

@@ -17,7 +17,7 @@ export default function App() {
 
   const rows: Row[] = useMemo(() => [
     ...PO_ROWS,
-    ...entries.filter(e => e.vehicle && e.rate > 0).map(e => ({
+    ...entries.filter(e => e.vehicle && e.rate > 0 && e.status === 'approved').map(e => ({
       country: e.country, city: e.city, type: e.type, detail: e.detail,
       vehicle: e.vehicle, vclass: classOf(e.vehicle),
       rate: Number(e.rate), month: e.month,
@@ -38,13 +38,13 @@ export default function App() {
         <nav className="tabs" aria-label="Sections">
           {([['card', 'Rate card'], ['add', 'Add a rate'], ['about', 'About the data']] as [Tab, string][]).map(([k, l]) => (
             <button key={k} aria-current={tab === k ? 'page' : undefined} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>
-              {l}{k === 'add' && entries.length > 0 && <span className="badge">{entries.length}</span>}
+              {l}{k === 'add' && entries.filter(e => e.status === 'pending').length > 0 && <span className="badge">{entries.filter(e => e.status === 'pending').length}</span>}
             </button>
           ))}
         </nav>
         <ThemeToggle />
       </header>
-      {tab === 'card' && <RateCard rows={rows} includeManual={includeManual} setIncludeManual={setIncludeManual} manualCount={entries.length} />}
+      {tab === 'card' && <RateCard rows={rows} includeManual={includeManual} setIncludeManual={setIncludeManual} manualCount={entries.filter(e => e.status === 'approved').length} />}
       {tab === 'add' && <AddRate entries={entries} setEntries={setEntries} />}
       {tab === 'about' && <About />}
     </div>
