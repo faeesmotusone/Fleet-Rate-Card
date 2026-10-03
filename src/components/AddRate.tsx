@@ -31,7 +31,9 @@ export function AddRate({ entries, setEntries }: { entries: Entry[]; setEntries:
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState<'add' | 'pending' | 'approved'>('add');
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(() => {
+    try { return sessionStorage.getItem('frc_admin') === 'yes'; } catch { return false; }
+  });
   const [showPwModal, setShowPwModal] = useState(false);
   const [pwInput, setPwInput] = useState('');
   const [pwError, setPwError] = useState(false);
@@ -49,6 +51,7 @@ export function AddRate({ entries, setEntries }: { entries: Entry[]; setEntries:
     const h = await hashPassword(pwInput);
     if (h === ADMIN_HASH) {
       setIsAdmin(true);
+      try { sessionStorage.setItem('frc_admin', 'yes'); } catch {}
       setShowPwModal(false);
       setPwError(false);
       if (pendingAction) { pendingAction(); setPendingAction(null); }
