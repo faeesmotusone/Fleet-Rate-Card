@@ -4,16 +4,19 @@ import { PO_ROWS, DATA, classOf, getCurrency } from '@/lib/data';
 import { RateCard } from '@/components/RateCard';
 import { AddRate } from '@/components/AddRate';
 import type { Entry } from '@/components/AddRate';
+import { ManageLists } from '@/components/ManageLists';
 import { About } from '@/components/About';
-import logo from '@/data/logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { useDbLists } from '@/hooks/useDbLists';
+import logo from '@/data/logo';
 
-type Tab = 'card' | 'add' | 'about';
+type Tab = 'card' | 'add' | 'manage' | 'about';
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('card');
   const [entries, setEntries] = useState<Entry[]>([]);
   const [includeManual, setIncludeManual] = useState(true);
+  const { vehicles: dbVehicles, cities: dbCities, reloadVehicles, reloadCities } = useDbLists();
 
   const rows: Row[] = useMemo(() => [
     ...PO_ROWS,
@@ -24,6 +27,8 @@ export default function App() {
       supplier: 'manual', po: 'm' + e.id, manual: true, note: e.note,
     } as Row)),
   ], [entries]);
+
+  const pendingCount = entries.filter(e => e.status === 'pending').length;
 
   return (
     <div className="app">
@@ -36,16 +41,17 @@ export default function App() {
           </div>
         </div>
         <nav className="tabs" aria-label="Sections">
-          {([['card', 'Rate card'], ['add', 'Add a rate'], ['about', 'About the data']] as [Tab, string][]).map(([k, l]) => (
+          {([['card', 'Rate card'], ['add', 'Add a rate'], ['manage', 'Vehicles & Cities'], ['about', 'About the data']] as [Tab, string][]).map(([k, l]) => (
             <button key={k} aria-current={tab === k ? 'page' : undefined} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>
-              {l}{k === 'add' && entries.filter(e => e.status === 'pending').length > 0 && <span className="badge">{entries.filter(e => e.status === 'pending').length}</span>}
+              {l}{k === 'add' && pendingCount > 0 && <span className="badge">{pendingCount}</span>}
             </button>
           ))}
         </nav>
         <ThemeToggle />
       </header>
       {tab === 'card' && <RateCard rows={rows} includeManual={includeManual} setIncludeManual={setIncludeManual} manualCount={entries.filter(e => e.status === 'approved').length} />}
-      {tab === 'add' && <AddRate entries={entries} setEntries={setEntries} />}
+      {tab === 'add' && <AddRate entries={entries} setEntries={setEntries} dbVehicles={dbVehicles} dbCities={dbCities} />}
+      {tab === 'manage' && <ManageLists vehicles={dbVehicles} cities={dbCities} onReload={() => { reloadVehicles(); reloadCities(); }} />}
       {tab === 'about' && <About />}
     </div>
   );

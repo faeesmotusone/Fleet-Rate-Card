@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import type { Country, RateType } from '@/lib/data';
-import { CITIES, VEHICLES, CLASS_ORDER, ROUTES, fmt, monthLabel, getCurrency } from '@/lib/data';
+import { CLASS_ORDER, ROUTES, fmt, monthLabel, getCurrency } from '@/lib/data';
 import { supabase } from '@/lib/supabase';
 import type { ManualRate } from '@/lib/supabase';
 
@@ -19,7 +19,11 @@ async function hashPassword(pw: string): Promise<string> {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-export function AddRate({ entries, setEntries }: { entries: Entry[]; setEntries: (e: Entry[]) => void }) {
+export function AddRate({ entries, setEntries, dbVehicles, dbCities }: {
+  entries: Entry[]; setEntries: (e: Entry[]) => void;
+  dbVehicles: { id: string; name: string; class: string }[];
+  dbCities: { id: string; country: string; city: string; currency: string }[];
+}) {
   const [status, setStatus] = useState<'loading' | 'ready' | 'off'>('loading');
   const [name, setName] = useState(() => {
     try { return localStorage.getItem(STORAGE_NAME_KEY) || ''; } catch { return ''; }
@@ -84,7 +88,8 @@ export function AddRate({ entries, setEntries }: { entries: Entry[]; setEntries:
   }, [loadRates]);
 
   const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }));
-  const cur = getCurrency(f.country, f.city);
+  const cityObj = dbCities.find(c => c.country === f.country && c.city === f.city);
+  const cur = cityObj?.currency || getCurrency(f.country, f.city);
 
   async function save() {
     if (!supabase) return;
@@ -140,7 +145,7 @@ export function AddRate({ entries, setEntries }: { entries: Entry[]; setEntries:
     </section>
   );
 
-  const vehiclesByClass = CLASS_ORDER.map(k => ({ k, vs: VEHICLES.filter(v => v.c === k) })).filter(g => g.vs.length);
+  const vehiclesByClass = CLASS_ORDER.map(k => ({ k, vs: dbVehicles.filter(v => v.class === k) })).filter(g => g.vs.length);
 
   return (
     <div className="add-page">
@@ -162,12 +167,12 @@ export function AddRate({ entries, setEntries }: { entries: Entry[]; setEntries:
             <label>Your name
               <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Ahmed, Sarah" /></label>
             <label>Country
-              <select value={f.country} onChange={e => { const c = e.target.value as Country; setF(p => ({ ...p, country: c, city: CITIES[c][0] })); }}>
+              <select value={f.country} onChange={e => { const c = e.target.value as Country; const firstCity = dbCities.find(ci => ci.country === c)?.city || ''; setF(p => ({ ...p, country: c, city: firstCity })); }}>
                 <option value="KSA">Saudi Arabia (SAR)</option><option value="UAE">UAE (AED)</option><option value="International">International</option>
               </select></label>
             <label>City
               <select value={f.city} onChange={e => set('city', e.target.value)}>
-                {CITIES[f.country].map(c => <option key={c}>{c}</option>)}
+                {dbCities.filter(c => c.country === f.country).map(c => <option key={c.id} value={c.city}>{c.city}</option>)}
               </select></label>
             <label>Booking
               <select value={f.type} onChange={e => set('type', e.target.value)}>
@@ -181,7 +186,7 @@ export function AddRate({ entries, setEntries }: { entries: Entry[]; setEntries:
             <label className="wide">Vehicle
               <select value={f.vehicle} onChange={e => set('vehicle', e.target.value)}>
                 <option value="">Choose a vehicle</option>
-                {vehiclesByClass.map(g => <optgroup key={g.k} label={g.k}>{g.vs.map(v => <option key={v.n}>{v.n}</option>)}</optgroup>)}
+                {vehiclesByClass.map(g => <optgroup key={g.k} label={g.k}>{g.vs.map(v => <option key={v.name}>{v.name}</option>)}</optgroup>)}
               </select></label>
             <label>Rate ({cur}, excl. VAT)
               <input inputMode="decimal" value={f.rate} onChange={e => set('rate', e.target.value.replace(/[^\d.]/g, ''))} placeholder="e.g. 950" /></label>
