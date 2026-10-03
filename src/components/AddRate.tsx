@@ -12,6 +12,12 @@ export interface Entry {
 
 const thisMonth = () => new Date().toISOString().slice(0, 7);
 const STORAGE_NAME_KEY = 'frc_user_name';
+const ADMIN_HASH = '819f46d51cd9757d03df7a5fa937147fc987c1e32452cfa5ce0c4ced086ece04';
+
+async function hashPassword(pw: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 export function AddRate({ entries, setEntries }: { entries: Entry[]; setEntries: (e: Entry[]) => void }) {
   const [status, setStatus] = useState<'loading' | 'ready' | 'off'>('loading');
@@ -25,6 +31,31 @@ export function AddRate({ entries, setEntries }: { entries: Entry[]; setEntries:
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState<'add' | 'pending' | 'approved'>('add');
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showPwModal, setShowPwModal] = useState(false);
+  const [pwInput, setPwInput] = useState('');
+  const [pwError, setPwError] = useState(false);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+
+  async function checkAdmin(action: () => void) {
+    if (isAdmin) { action(); return; }
+    setPendingAction(() => action);
+    setShowPwModal(true);
+    setPwInput('');
+    setPwError(false);
+  }
+
+  async function submitPassword() {
+    const h = await hashPassword(pwInput);
+    if (h === ADMIN_HASH) {
+      setIsAdmin(true);
+      setShowPwModal(false);
+      setPwError(false);
+      if (pendingAction) { pendingAction(); setPendingAction(null); }
+    } else {
+      setPwError(true);
+    }
+  }
 
   const loadRates = useCallback(async () => {
     if (!supabase) { setStatus('off'); return; }
@@ -184,8 +215,8 @@ export function AddRate({ entries, setEntries }: { entries: Entry[]; setEntries:
                       <td>{monthLabel(e.month)}{e.po && <div className="muted small">{e.po}</div>}</td>
                       <td>{e.added_by || '\u2014'}</td>
                       <td className="action-btns">
-                        <button className="approve-btn" onClick={() => approve(e.id)}>Approve</button>
-                        <button className="reject-btn" onClick={() => reject(e.id)}>Reject</button>
+                        <button className="approve-btn" onClick={() => checkAdmin(() => approve(e.id))}>Approve</button>
+                        <button className="reject-btn" onClick={() => checkAdmin(() => reject(e.id))}>Reject</button>
                       </td>
                     </tr>
                   ))}
@@ -213,7 +244,7 @@ export function AddRate({ entries, setEntries }: { entries: Entry[]; setEntries:
                       <td className="num">{fmt(e.rate)} {e.currency}</td>
                       <td>{monthLabel(e.month)}{e.po && <div className="muted small">{e.po}</div>}</td>
                       <td>{e.added_by || '\u2014'}</td>
-                      <td><button className="reject-btn" onClick={() => reject(e.id)}>Remove</button></td>
+                      <td><button className="reject-btn" onClick={() => checkAdmin(() => reject(e.id))}>Remove</button></td>
                     </tr>
                   ))}
                 </tbody>
@@ -221,6 +252,27 @@ export function AddRate({ entries, setEntries }: { entries: Entry[]; setEntries:
             </div>
           )}
         </section>
+      )}
+      {showPwModal && (
+        <div className="pw-overlay" onClick={() => setShowPwModal(false)}>
+          <div className="pw-modal" onClick={e => e.stopPropagation()}>
+            <h3>Admin access required</h3>
+            <p className="muted">Enter the admin password to approve, reject or remove rates.</p>
+            <input
+              type="password"
+              value={pwInput}
+              onChange={e => { setPwInput(e.target.value); setPwError(false); }}
+              onKeyDown={e => e.key === 'Enter' && submitPassword()}
+              placeholder="Admin password"
+              autoFocus
+            />
+            {pwError && <p className="caution" style={{margin:'8px 0 0'}}>Wrong password. Try again.</p>}
+            <div className="pw-actions">
+              <button className="primary" onClick={submitPassword}>Unlock</button>
+              <button className="reject-btn" onClick={() => setShowPwModal(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
