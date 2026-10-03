@@ -29,9 +29,17 @@ export function AddRate({ entries, setEntries, dbVehicles, dbCities }: {
     try { return localStorage.getItem(STORAGE_NAME_KEY) || ''; } catch { return ''; }
   });
   const [f, setF] = useState({
-    country: 'KSA' as Country, city: CITIES.KSA[0], type: 'Daily' as RateType,
+    country: 'KSA' as Country, city: '', type: 'Daily' as RateType,
     detail: 'Airport', vehicle: '', rate: '', month: thisMonth(), po: '', note: ''
   });
+
+  // Set initial city once dbCities loads
+  useEffect(() => {
+    if (dbCities.length && !f.city) {
+      const first = dbCities.find(c => c.country === f.country);
+      if (first) setF(p => ({ ...p, city: first.city }));
+    }
+  }, [dbCities]);
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState<'add' | 'pending' | 'approved'>('add');
