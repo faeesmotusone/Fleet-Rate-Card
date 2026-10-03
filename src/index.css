@@ -186,3 +186,7 @@ code { background: var(--tint); padding: 2px 6px; border-radius: 4px; font-size:
 .manage-scroll { max-height: 400px; overflow-y: auto; margin-top: 8px; }
 .manage-item { padding: 6px 10px; font-size: 14px; border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: center; }
 @media (max-width: 820px) { .manage-row { grid-template-columns: 1fr; } }
+
+.remove-btn { background: none; border: 0; color: var(--slate); font-size: 12px; cursor: pointer; opacity: 0; transition: opacity .15s; padding: 2px 8px; }
+.manage-item:hover .remove-btn { opacity: 1; }
+.remove-btn:hover { color: var(--signal); }
