@@ -24,11 +24,28 @@ export function RateCard({ rows, includeManual, setIncludeManual, manualCount }:
   const [city, setCity] = useState<string>(ALL);
   const [vehicle, setVehicle] = useState<string>('');
   const [q, setQ] = useState('');
+  const [period, setPeriod] = useState<'all' | '3m' | '6m' | 'custom'>('all');
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
   const [downloads, setDownloads] = useState<any>(null);
   useEffect(() => { cap('downloads').then(setDownloads); }, []);
 
+  const allMonths = useMemo(() => [...new Set(rows.map(r => r.month))].sort(), [rows]);
+
   const cur = getCurrency(country, city);
-  const base = useMemo(() => rows.filter(r => r.country === country && r.type === type && (includeManual || !r.manual) && (type === 'Daily' || route === ALL || r.detail === route)), [rows, country, type, route, includeManual]);
+  const base = useMemo(() => {
+    let filtered = rows.filter(r => r.country === country && r.type === type && (includeManual || !r.manual) && (type === 'Daily' || route === ALL || r.detail === route));
+    if (period === '3m') {
+      const recent = allMonths.slice(-3);
+      filtered = filtered.filter(r => recent.includes(r.month));
+    } else if (period === '6m') {
+      const recent = allMonths.slice(-6);
+      filtered = filtered.filter(r => recent.includes(r.month));
+    } else if (period === 'custom' && (customFrom || customTo)) {
+      filtered = filtered.filter(r => (!customFrom || r.month >= customFrom) && (!customTo || r.month <= customTo));
+    }
+    return filtered;
+  }, [rows, country, type, route, includeManual, period, customFrom, customTo, allMonths]);
   const inCity = useMemo(() => base.filter(r => city === ALL || r.city === city), [base, city]);
 
   const vehicleList = useMemo(() => {
@@ -99,6 +116,22 @@ export function RateCard({ rows, includeManual, setIncludeManual, manualCount }:
               return <button key={c} role="radio" aria-checked={city === c} disabled={!n} className={city === c ? 'on' : ''} onClick={() => setCity(c)}><span>{c === ALL ? 'All cities' : c}{country === 'International' && c !== ALL && CITY_CURRENCY[c] ? <em className="cur-tag">{CITY_CURRENCY[c]}</em> : null}</span><span className="count">{n}</span></button>;
             })}
           </div>
+        </div>
+        <div className="field">
+          <span className="field-label">Period</span>
+          <Seg label="Period" value={period} onChange={v => setPeriod(v)} options={[
+            { v: 'all', l: 'All time' }, { v: '3m', l: 'Last 3 mo' }, { v: '6m', l: 'Last 6 mo' }, { v: 'custom', l: 'Custom' }
+          ]} />
+          {period === 'custom' && (
+            <div className="month-range">
+              <input type="month" value={customFrom} onChange={e => setCustomFrom(e.target.value)} min={allMonths[0]} max={allMonths[allMonths.length - 1]} />
+              <span className="month-range-sep">to</span>
+              <input type="month" value={customTo} onChange={e => setCustomTo(e.target.value)} min={allMonths[0]} max={allMonths[allMonths.length - 1]} />
+            </div>
+          )}
+          {period !== 'all' && base.length > 0 && (
+            <p className="muted small period-note">{base.length} booking{base.length !== 1 ? 's' : ''} in this period</p>
+          )}
         </div>
         <div className="field">
           <label className="field-label" htmlFor="vsearch">Vehicle</label>
