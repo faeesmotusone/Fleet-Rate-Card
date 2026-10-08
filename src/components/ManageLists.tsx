@@ -5,7 +5,7 @@ import { CLASS_ORDER } from '@/lib/data';
 
 const CURRENCIES = ['SAR','AED','USD','GBP','EUR','QAR','INR','BHD','CAD','MXN','RWF','KES','CHF','AUD','JPY','SGD','HKD','ZAR','TRY','THB'];
 const COUNTRIES = ['KSA','UAE','International'];
-const ADMIN_HASH = '819f46d51cd9757d03df7a5fa937147fc987c1e32452cfa5ce0c4ced086ece04';
+const ADMIN_HASH = 'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3';
 
 async function hashPassword(pw: string): Promise<string> {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));

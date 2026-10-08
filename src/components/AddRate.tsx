@@ -12,7 +12,7 @@ export interface Entry {
 
 const thisMonth = () => new Date().toISOString().slice(0, 7);
 const STORAGE_NAME_KEY = 'frc_user_name';
-const ADMIN_HASH = '819f46d51cd9757d03df7a5fa937147fc987c1e32452cfa5ce0c4ced086ece04';
+const ADMIN_HASH = 'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3';
 
 async function hashPassword(pw: string): Promise<string> {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
