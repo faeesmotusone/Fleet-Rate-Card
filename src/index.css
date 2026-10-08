@@ -56,6 +56,10 @@ img { max-width: 100%; }
 .count { color: var(--slate); font-size: 13px; font-weight: 400; }
 .vgroup { font-size: 12px; color: var(--slate); padding: 10px 10px 2px; font-weight: 600; }
 .search { border: 1px solid var(--rule); background: var(--surface); border-radius: 8px; padding: 8px 10px; }
+.month-range { display: flex; align-items: center; gap: 8px; }
+.month-range input[type="month"] { border: 1px solid var(--rule); background: var(--surface); border-radius: 6px; padding: 6px 8px; font-size: 13px; color: var(--ink); flex: 1; min-width: 0; }
+.month-range-sep { color: var(--slate); font-size: 13px; flex-shrink: 0; }
+.period-note { margin: 0; }
 .vlist { max-height: 46vh; overflow: auto; }
 .toggle { display: flex; gap: 8px; align-items: center; font-size: 14px; }
 
