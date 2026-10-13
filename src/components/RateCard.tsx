@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import type { Row, Country, RateType, Stats } from '@/lib/data';
-import { CITIES, CLASS_ORDER, ROUTES, stats, fmt, monthLabel, shortVehicle, classOf, getCurrency, CITY_CURRENCY } from '@/lib/data';
+import { CITIES, CLASS_ORDER, ROUTES, SELF_DRIVE_DURATIONS, stats, fmt, monthLabel, shortVehicle, classOf, getCurrency, CITY_CURRENCY } from '@/lib/data';
 import { Strip } from './Strip';
 import { Trend } from './Trend';
 import { cap } from '@/lib/claude';
@@ -76,10 +76,11 @@ export function RateCard({ rows, includeManual, setIncludeManual, manualCount }:
     .filter(x => x.rows.length).map(x => ({ ...x, s: stats(x.rows)! })).sort((a, b) => a.s.median - b.s.median), [base, vehicle, country]);
   const acrossLo = Math.min(...across.map(a => a.s.min)), acrossHi = Math.max(...across.map(a => a.s.max));
 
-  // transfer vs daily
+  // cross-type comparison
   const other = rows.filter(r => r.country === country && r.vehicle === vehicle && (city === ALL || r.city === city) && (includeManual || !r.manual));
   const dSt = stats(other.filter(r => r.type === 'Daily'));
   const tSt = stats(other.filter(r => r.type === 'Transfer' && r.detail !== 'Intercity'));
+  const sdSt = stats(other.filter(r => r.type === 'Self-drive' && r.detail === 'Daily'));
 
   const filteredVehicles = vehicleList.filter(v => v.n.toLowerCase().includes(q.toLowerCase()));
   const grouped = CLASS_ORDER.map(k => ({ k, vs: filteredVehicles.filter(v => v.k === k) })).filter(g => g.vs.length);
@@ -88,7 +89,7 @@ export function RateCard({ rows, includeManual, setIncludeManual, manualCount }:
     if (!downloads) return;
     const head = ['Country', 'City', 'Booking type', 'Route', 'Vehicle', 'Class', 'Bookings', 'Lowest', 'Median', 'Highest', 'Currency', 'Latest booking'];
     const lines = [head.join(',')];
-    ladder.forEach(l => lines.push([country, city === ALL ? 'All' : city, type, type === 'Daily' ? '12 hrs / full day' : (route === ALL ? 'All' : route), `"${l.n}"`, l.k, l.s.n, Math.round(l.s.min), Math.round(l.s.median), Math.round(l.s.max), getCurrency(country, city === ALL ? undefined : city), monthLabel(l.s.latest)].join(',')));
+    ladder.forEach(l => lines.push([country, city === ALL ? 'All' : city, type, type === 'Daily' ? '12 hrs / full day' : type === 'Self-drive' ? (route === ALL ? 'All durations' : route) : (route === ALL ? 'All' : route), `"${l.n}"`, l.k, l.s.n, Math.round(l.s.min), Math.round(l.s.median), Math.round(l.s.max), getCurrency(country, city === ALL ? undefined : city), monthLabel(l.s.latest)].join(',')));
     try { await downloads.save({ filename: `Fleet rates ${country} ${type} ${city === ALL ? 'all cities' : city}.csv`, data: lines.join('\n') }); } catch { /* viewer declined */ }
   }
 
@@ -101,10 +102,15 @@ export function RateCard({ rows, includeManual, setIncludeManual, manualCount }:
         </div>
         <div className="field">
           <span className="field-label">Booking</span>
-          <Seg label="Booking type" value={type} onChange={v => { setType(v); setRoute(ALL); }} options={[{ v: 'Daily', l: 'Daily, 12 hrs' }, { v: 'Transfer', l: 'One-way transfer' }]} />
+          <Seg label="Booking type" value={type} onChange={v => { setType(v); setRoute(ALL); }} options={[{ v: 'Self-drive', l: 'Self-drive' }, { v: 'Daily', l: 'Daily, 12 hrs' }, { v: 'Transfer', l: 'One-way transfer' }]} />
           {type === 'Transfer' && (
             <div className="chips" role="radiogroup" aria-label="Transfer route">
               {[ALL, ...ROUTES].map(r => <button key={r} role="radio" aria-checked={route === r} className={route === r ? 'on' : ''} onClick={() => setRoute(r)}>{r === ALL ? 'All routes' : r}</button>)}
+            </div>
+          )}
+          {type === 'Self-drive' && (
+            <div className="chips" role="radiogroup" aria-label="Rental duration">
+              {[ALL, ...SELF_DRIVE_DURATIONS].map(r => <button key={r} role="radio" aria-checked={route === r} className={route === r ? 'on' : ''} onClick={() => setRoute(r)}>{r === ALL ? 'All durations' : r}</button>)}
             </div>
           )}
         </div>
@@ -162,7 +168,7 @@ export function RateCard({ rows, includeManual, setIncludeManual, manualCount }:
             <section className="hero">
               <div className="hero-head">
                 <div>
-                  <p className="hero-kicker">{type === 'Daily' ? 'Daily rate, 12 hrs incl. driver & fuel' : `One-way transfer${route !== ALL ? `, ${route.toLowerCase()}` : ''}`} in {cityName}</p>
+                  <p className="hero-kicker">{type === 'Daily' ? 'Daily rate, 12 hrs incl. driver & fuel' : type === 'Self-drive' ? `Self-drive rental${route !== ALL ? `, ${route.toLowerCase()}` : ''}` : `One-way transfer${route !== ALL ? `, ${route.toLowerCase()}` : ''}`} in {cityName}</p>
                   <h2 className="hero-title">{vehicle}</h2>
                   <p className="hero-class">{classOf(vehicle)}</p>
                 </div>
@@ -187,6 +193,11 @@ export function RateCard({ rows, includeManual, setIncludeManual, manualCount }:
               {dSt && tSt && (
                 <p className="insight">
                   A full day ({fmt(dSt.median)} {cur}) costs about the same as <strong>{(dSt.median / tSt.median).toFixed(1)} one-way transfers</strong> ({fmt(tSt.median)} {cur} each) for this vehicle in {cityName}. Booking the day pays off from {Math.ceil(dSt.median / tSt.median)} transfers.
+                </p>
+              )}
+              {dSt && sdSt && (
+                <p className="insight">
+                  Chauffeur-driven ({fmt(dSt.median)} {cur}/day) vs. self-drive ({fmt(sdSt.median)} {cur}/day): the driver adds <strong>{fmt(dSt.median - sdSt.median)} {cur}</strong> ({((dSt.median / sdSt.median - 1) * 100).toFixed(0)}% more) per day for this vehicle in {cityName}.
                 </p>
               )}
             </section>

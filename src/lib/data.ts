@@ -1,7 +1,7 @@
 import raw from '../data/rates.json';
 
 export type Country = 'KSA' | 'UAE' | 'International';
-export type RateType = 'Daily' | 'Transfer';
+export type RateType = 'Daily' | 'Transfer' | 'Self-drive';
 export interface Row {
   country: Country; city: string; type: RateType; detail: string;
   vehicle: string; vclass: string; rate: number; month: string;
@@ -15,6 +15,7 @@ export const CITIES: Record<Country, string[]> = DATA.cities;
 export const CITY_CURRENCY: Record<string, string> = DATA.cityCurrency ?? {};
 export const CLASS_ORDER = ['Economy Sedan', 'Sedan', 'Executive Sedan', 'Luxury Sedan', 'SUV', 'Luxury SUV', 'Van', 'Minibus', 'Coach', 'Utility'];
 export const ROUTES = ['Airport', 'In-city', 'Intercity'];
+export const SELF_DRIVE_DURATIONS = ['Daily', 'Weekly', 'Monthly'];
 
 /** Get the display currency for a country + city combination */
 export function getCurrency(country: Country, city?: string): string {
