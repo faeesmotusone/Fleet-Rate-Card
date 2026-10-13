@@ -27,7 +27,7 @@ export function getCurrency(country: Country, city?: string): string {
 }
 
 export const PO_ROWS: Row[] = DATA.rows.map((r: any[]) => ({
-  country: r[0], city: CITIES[r[0] as Country][r[1]], type: r[2] === 0 ? 'Daily' : 'Transfer',
+  country: r[0], city: CITIES[r[0] as Country][r[1]], type: r[2] === 0 ? 'Daily' : r[2] === 2 ? 'Self-drive' : 'Transfer',
   detail: r[3], vehicle: VEHICLES[r[4]].n, vclass: VEHICLES[r[4]].c, rate: r[5], month: r[6],
   supplier: 's' + r[7], po: 'p' + r[8],
 }));
