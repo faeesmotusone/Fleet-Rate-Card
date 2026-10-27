@@ -102,7 +102,7 @@ export function RateCard({ rows, includeManual, setIncludeManual, manualCount }:
         </div>
         <div className="field">
           <span className="field-label">Booking</span>
-          <Seg label="Booking type" value={type} onChange={v => { setType(v); setRoute(ALL); }} options={[{ v: 'Self-drive', l: 'Self-drive' }, { v: 'Daily', l: 'Daily, 12 hrs' }, { v: 'Transfer', l: 'One-way transfer' }]} />
+          <Seg label="Booking type" value={type} onChange={v => { setType(v); setRoute(ALL); }} options={[{ v: 'Self-drive', l: 'Self-drive' }, { v: 'Daily', l: 'Daily / Hourly' }, { v: 'Transfer', l: 'One-way transfer' }]} />
           {type === 'Transfer' && (
             <div className="chips" role="radiogroup" aria-label="Transfer route">
               {[ALL, ...ROUTES].map(r => <button key={r} role="radio" aria-checked={route === r} className={route === r ? 'on' : ''} onClick={() => setRoute(r)}>{r === ALL ? 'All routes' : r}</button>)}
@@ -114,8 +114,8 @@ export function RateCard({ rows, includeManual, setIncludeManual, manualCount }:
             </div>
           )}
           {type === 'Daily' && (
-            <div className="chips" role="radiogroup" aria-label="Daily detail">
-              {[ALL, ...DAILY_DETAILS].map(r => <button key={r} role="radio" aria-checked={route === r} className={route === r ? 'on' : ''} onClick={() => setRoute(r)}>{r === ALL ? 'All' : r}</button>)}
+            <div className="chips" role="radiogroup" aria-label="Hours">
+              {[ALL, ...DAILY_DETAILS].map(r => <button key={r} role="radio" aria-checked={route === r} className={route === r ? 'on' : ''} onClick={() => setRoute(r)}>{r === ALL ? 'All hours' : r}</button>)}
             </div>
           )}
         </div>
@@ -173,7 +173,7 @@ export function RateCard({ rows, includeManual, setIncludeManual, manualCount }:
             <section className="hero">
               <div className="hero-head">
                 <div>
-                  <p className="hero-kicker">{type === 'Daily' ? `Daily rate${route !== ALL ? `, ${route}` : ''} incl. driver & fuel` : type === 'Self-drive' ? `Self-drive rental${route !== ALL ? `, ${route.toLowerCase()}` : ''}` : `One-way transfer${route !== ALL ? `, ${route.toLowerCase()}` : ''}`} in {cityName}</p>
+                  <p className="hero-kicker">{type === 'Daily' ? `Hourly / daily rate${route !== ALL ? ` — ${route}` : ''}, incl. driver & fuel` : type === 'Self-drive' ? `Self-drive rental${route !== ALL ? `, ${route.toLowerCase()}` : ''}` : `One-way transfer${route !== ALL ? `, ${route.toLowerCase()}` : ''}`} in {cityName}</p>
                   <h2 className="hero-title">{vehicle}</h2>
                   <p className="hero-class">{classOf(vehicle)}</p>
                 </div>

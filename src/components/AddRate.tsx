@@ -185,10 +185,10 @@ export function AddRate({ entries, setEntries, dbVehicles, dbCities }: {
             <label>Booking
               <select value={f.type} onChange={e => set('type', e.target.value)}>
                 <option value="Self-drive">Self-drive rental (no driver)</option>
-                <option value="Daily">Daily, 12 hrs incl. driver & fuel</option>
+                <option value="Daily">Daily / Hourly incl. driver & fuel</option>
                 <option value="Transfer">One-way transfer</option>
               </select></label>
-            {f.type === 'Daily' && <label>Detail
+            {f.type === 'Daily' && <label>Hours
               <select value={f.detail} onChange={e => set('detail', e.target.value)}>
                 {DAILY_DETAILS.map(d => <option key={d}>{d}</option>)}
               </select></label>}
