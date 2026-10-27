@@ -10,6 +10,9 @@ interface SupplierSummary {
   types: string[];
   vehicles: number;
   cities: number;
+  avgRate: number;
+  minRate: number;
+  maxRate: number;
 }
 
 const COUNTRY_OPTIONS: { value: string; label: string }[] = [
@@ -38,14 +41,19 @@ export function SupplierView({ rows }: { rows: Row[] }) {
 
     const list: SupplierSummary[] = [];
     for (const [name, sRows] of map) {
+      const rates = sRows.map(r => r.rate);
+      const sum = rates.reduce((a, b) => a + b, 0);
       list.push({
-        code: name, // use name as the key (not individual supplier code)
+        code: name,
         name,
         rows: sRows.length,
         countries: [...new Set(sRows.map(r => r.country))],
         types: [...new Set(sRows.map(r => r.type))],
         vehicles: new Set(sRows.map(r => r.vehicle)).size,
         cities: new Set(sRows.map(r => r.city)).size,
+        avgRate: sum / rates.length,
+        minRate: Math.min(...rates),
+        maxRate: Math.max(...rates),
       });
     }
     return list.sort((a, b) => b.rows - a.rows);
@@ -62,6 +70,19 @@ export function SupplierView({ rows }: { rows: Row[] }) {
     }
     return list;
   }, [suppliers, countryFilter, search]);
+
+  // Identify highest and lowest avg-rate suppliers among those currently shown
+  const { highestName, lowestName } = useMemo(() => {
+    if (filteredSuppliers.length < 2) return { highestName: '', lowestName: '' };
+    let hi = filteredSuppliers[0], lo = filteredSuppliers[0];
+    for (const s of filteredSuppliers) {
+      if (s.avgRate > hi.avgRate) hi = s;
+      if (s.avgRate < lo.avgRate) lo = s;
+    }
+    // Only tag if there's a meaningful spread (not all the same avg)
+    if (hi.name === lo.name) return { highestName: '', lowestName: '' };
+    return { highestName: hi.name, lowestName: lo.name };
+  }, [filteredSuppliers]);
 
   const selectedRows = useMemo(() => {
     if (!selected) return [];
@@ -91,9 +112,14 @@ export function SupplierView({ rows }: { rows: Row[] }) {
       <div className="supplier-view">
         <button className="back-btn" onClick={() => { setSelected(null); setTypeFilter('All'); }}>← All suppliers</button>
         <div className="supplier-header">
-          <h2>{selectedInfo.name}</h2>
+          <h2>
+            {selectedInfo.name}
+            {selectedInfo.name === lowestName && <span className="supplier-badge lowest">Lowest avg rate</span>}
+            {selectedInfo.name === highestName && <span className="supplier-badge highest">Highest avg rate</span>}
+          </h2>
           <div className="supplier-meta">
             <span>{selectedInfo.rows} rates</span>
+            <span>Avg {fmt(selectedInfo.avgRate)}</span>
             <span>{selectedInfo.countries.join(', ')}</span>
             <span>{selectedInfo.vehicles} vehicles</span>
             <span>{selectedInfo.cities} cities</span>
@@ -168,16 +194,21 @@ export function SupplierView({ rows }: { rows: Row[] }) {
       <p className="muted">{filteredSuppliers.length} supplier{filteredSuppliers.length !== 1 ? 's' : ''} · sorted by number of rates</p>
       <div className="supplier-grid">
         {filteredSuppliers.map(s => (
-          <button key={s.code} className="supplier-card" onClick={() => setSelected(s.code)}>
-            <div className="supplier-card-name">{s.name}</div>
+          <button key={s.code} className={`supplier-card${s.name === lowestName ? ' card-lowest' : ''}${s.name === highestName ? ' card-highest' : ''}`} onClick={() => setSelected(s.code)}>
+            <div className="supplier-card-name">
+              {s.name}
+              {s.name === lowestName && <span className="supplier-badge lowest">Lowest</span>}
+              {s.name === highestName && <span className="supplier-badge highest">Highest</span>}
+            </div>
             <div className="supplier-card-meta">
               <span>{s.rows} rates</span>
+              <span>Avg {fmt(s.avgRate)}</span>
               <span>{s.countries.join(', ')}</span>
-              <span>{s.types.join(' · ')}</span>
             </div>
             <div className="supplier-card-stats">
               <span>{s.vehicles} vehicles</span>
               <span>{s.cities} cities</span>
+              <span>{s.types.join(' · ')}</span>
             </div>
           </button>
         ))}

@@ -219,4 +219,13 @@ code { background: var(--tint); padding: 2px 6px; border-radius: 4px; font-size:
 .supplier-type-section { margin-top: 28px; }
 .supplier-type-section h3 { font-size: 16px; margin: 0 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--rule); }
 .supplier-table th { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--slate); }
+/* Supplier rate badges */
+.supplier-badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; margin-left: 8px; vertical-align: middle; letter-spacing: .02em; }
+.supplier-badge.lowest { background: #e6f4ec; color: #15603e; }
+.supplier-badge.highest { background: #fde8e4; color: #b42a0f; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .supplier-badge.lowest { background: #1a3a2a; color: #6ee7a5; } :root:not([data-theme="light"]) .supplier-badge.highest { background: #3a1a14; color: #fca89a; } }
+:root[data-theme="dark"] .supplier-badge.lowest { background: #1a3a2a; color: #6ee7a5; }
+:root[data-theme="dark"] .supplier-badge.highest { background: #3a1a14; color: #fca89a; }
+.supplier-card.card-lowest { border-color: var(--good); }
+.supplier-card.card-highest { border-color: var(--signal); }
 @media (max-width: 600px) { .supplier-grid { grid-template-columns: 1fr; } }
