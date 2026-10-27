@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import type { Row, Country, RateType, Stats } from '@/lib/data';
-import { CITIES, CLASS_ORDER, ROUTES, SELF_DRIVE_DURATIONS, DAILY_DETAILS, stats, fmt, monthLabel, shortVehicle, classOf, getCurrency, CITY_CURRENCY } from '@/lib/data';
+import { CITIES, CLASS_ORDER, ROUTES, SELF_DRIVE_DURATIONS, DAILY_DETAILS, stats, fmt, monthLabel, shortVehicle, classOf, getCurrency, CITY_CURRENCY, supplierName } from '@/lib/data';
 import { Strip } from './Strip';
 import { Trend } from './Trend';
 import { cap } from '@/lib/claude';
@@ -66,6 +66,17 @@ export function RateCard({ rows, includeManual, setIncludeManual, manualCount }:
   const sel = inCity.filter(r => r.vehicle === vehicle);
   const st = stats(sel);
   const cityName = city === ALL ? (country === 'KSA' ? 'all of Saudi Arabia' : country === 'UAE' ? 'all of the UAE' : 'all international cities') : city;
+
+  // Find supplier names for lowest and highest rates
+  const { loSupplier, hiSupplier } = useMemo(() => {
+    if (!sel.length) return { loSupplier: '', hiSupplier: '' };
+    let lo = sel[0], hi = sel[0];
+    for (const r of sel) {
+      if (r.rate < lo.rate) lo = r;
+      if (r.rate > hi.rate) hi = r;
+    }
+    return { loSupplier: supplierName(lo.supplier), hiSupplier: supplierName(hi.supplier) };
+  }, [sel]);
 
   // ladder: other vehicles in this city
   const ladder = useMemo(() => vehicleList.map(v => ({ ...v, s: stats(inCity.filter(r => r.vehicle === v.n))! })), [vehicleList, inCity]);
@@ -187,9 +198,9 @@ export function RateCard({ rows, includeManual, setIncludeManual, manualCount }:
 
               {country === 'International' && city === ALL && <p className="local-cur-note">Rates are in each city's local currency. Select a city for comparable rates in one currency.</p>}
               <dl className="facts">
-                <div><dt>Lowest paid</dt><dd>{fmt(st.min)} {cur}</dd></div>
+                <div><dt>Lowest paid</dt><dd>{fmt(st.min)} {cur}{loSupplier && <span className="rate-supplier lowest">{loSupplier}</span>}</dd></div>
                 <div><dt>Middle half of bookings</dt><dd>{fmt(st.p25)} – {fmt(st.p75)}</dd></div>
-                <div><dt>Highest paid</dt><dd>{fmt(st.max)} {cur}</dd></div>
+                <div><dt>Highest paid</dt><dd>{fmt(st.max)} {cur}{hiSupplier && <span className="rate-supplier highest">{hiSupplier}</span>}</dd></div>
                 <div><dt>Bookings</dt><dd>{st.n}{st.manual ? <span className="tag">{st.manual} added</span> : null}</dd></div>
                 <div><dt>Suppliers</dt><dd>{st.suppliers}</dd></div>
                 <div><dt>Latest booking</dt><dd>{monthLabel(st.latest)}</dd></div>
