@@ -198,6 +198,11 @@ code { background: var(--tint); padding: 2px 6px; border-radius: 4px; font-size:
 /* ── Supplier View ── */
 .supplier-view { padding-top: 24px; }
 .supplier-view h2 { font-size: 22px; margin: 0 0 6px; }
+.supplier-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 14px 0 10px; }
+.supplier-search { flex: 1; min-width: 200px; border: 1px solid var(--rule); background: var(--surface); border-radius: 8px; padding: 10px 14px; font-size: 15px; color: var(--ink); }
+.supplier-search::placeholder { color: var(--slate); }
+.supplier-search:focus { border-color: var(--signal); outline: none; }
+.supplier-filters { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-bottom: 8px; }
 .supplier-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-top: 18px; }
 .supplier-card { text-align: left; background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 18px 20px; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
 .supplier-card:hover { border-color: var(--signal); box-shadow: 0 2px 12px rgba(0,0,0,.08); }
