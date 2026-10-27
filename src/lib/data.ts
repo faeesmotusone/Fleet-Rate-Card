@@ -27,6 +27,12 @@ export function getCurrency(country: Country, city?: string): string {
   return 'USD'; // fallback for "all cities"
 }
 
+export const SUPPLIER_NAMES: string[] = DATA.supplierNames ?? [];
+export function supplierName(code: string): string {
+  const idx = parseInt(code.replace('s', ''), 10);
+  return SUPPLIER_NAMES[idx] || code;
+}
+
 export const PO_ROWS: Row[] = DATA.rows.map((r: any[]) => ({
   country: r[0], city: CITIES[r[0] as Country][r[1]], type: r[2] === 0 ? 'Daily' : r[2] === 2 ? 'Self-drive' : 'Transfer',
   detail: r[3], vehicle: VEHICLES[r[4]].n, vclass: VEHICLES[r[4]].c, rate: r[5], month: r[6],

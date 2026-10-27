@@ -194,3 +194,24 @@ code { background: var(--tint); padding: 2px 6px; border-radius: 4px; font-size:
 .remove-btn { background: none; border: 0; color: var(--slate); font-size: 12px; cursor: pointer; opacity: 0; transition: opacity .15s; padding: 2px 8px; }
 .manage-item:hover .remove-btn { opacity: 1; }
 .remove-btn:hover { color: var(--signal); }
+
+/* ── Supplier View ── */
+.supplier-view { padding-top: 24px; }
+.supplier-view h2 { font-size: 22px; margin: 0 0 6px; }
+.supplier-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-top: 18px; }
+.supplier-card { text-align: left; background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 18px 20px; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+.supplier-card:hover { border-color: var(--signal); box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+.supplier-card-name { font-weight: 700; font-size: 15px; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.supplier-card-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--slate); }
+.supplier-card-stats { display: flex; gap: 14px; font-size: 13px; color: var(--slate); margin-top: 6px; }
+.back-btn { background: none; border: 0; color: var(--signal); font-weight: 600; font-size: 14px; cursor: pointer; padding: 0; margin-bottom: 12px; }
+.back-btn:hover { text-decoration: underline; }
+.supplier-header { margin-bottom: 18px; }
+.supplier-header h2 { margin-bottom: 8px; }
+.supplier-meta { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 14px; color: var(--slate); }
+.supplier-meta span::before { content: '·'; margin-right: 4px; opacity: .4; }
+.supplier-meta span:first-child::before { display: none; }
+.supplier-type-section { margin-top: 28px; }
+.supplier-type-section h3 { font-size: 16px; margin: 0 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--rule); }
+.supplier-table th { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--slate); }
+@media (max-width: 600px) { .supplier-grid { grid-template-columns: 1fr; } }

@@ -6,11 +6,12 @@ import { AddRate } from '@/components/AddRate';
 import type { Entry } from '@/components/AddRate';
 import { ManageLists } from '@/components/ManageLists';
 import { About } from '@/components/About';
+import { SupplierView } from '@/components/SupplierView';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useDbLists } from '@/hooks/useDbLists';
 import logo from '@/data/logo';
 
-type Tab = 'card' | 'add' | 'manage' | 'about';
+type Tab = 'card' | 'suppliers' | 'add' | 'manage' | 'about';
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('card');
@@ -41,7 +42,7 @@ export default function App() {
           </div>
         </div>
         <nav className="tabs" aria-label="Sections">
-          {([['card', 'Rate card'], ['add', 'Add a rate'], ['manage', 'Vehicles & Cities'], ['about', 'About the data']] as [Tab, string][]).map(([k, l]) => (
+          {([['card', 'Rate card'], ['suppliers', 'Suppliers'], ['add', 'Add a rate'], ['manage', 'Vehicles & Cities'], ['about', 'About the data']] as [Tab, string][]).map(([k, l]) => (
             <button key={k} aria-current={tab === k ? 'page' : undefined} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>
               {l}{k === 'add' && pendingCount > 0 && <span className="badge">{pendingCount}</span>}
             </button>
@@ -50,6 +51,7 @@ export default function App() {
         <ThemeToggle />
       </header>
       {tab === 'card' && <RateCard rows={rows} includeManual={includeManual} setIncludeManual={setIncludeManual} manualCount={entries.filter(e => e.status === 'approved').length} />}
+      {tab === 'suppliers' && <SupplierView rows={rows} />}
       {tab === 'add' && <AddRate entries={entries} setEntries={setEntries} dbVehicles={dbVehicles} dbCities={dbCities} />}
       {tab === 'manage' && <ManageLists vehicles={dbVehicles} cities={dbCities} onReload={() => { reloadVehicles(); reloadCities(); }} />}
       {tab === 'about' && <About />}
