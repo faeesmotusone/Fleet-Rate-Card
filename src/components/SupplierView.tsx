@@ -26,19 +26,21 @@ export function SupplierView({ rows }: { rows: Row[] }) {
   const [countryFilter, setCountryFilter] = useState('All');
 
   const suppliers = useMemo(() => {
+    // Group by resolved supplier NAME so the same company appears once
     const map = new Map<string, Row[]>();
     for (const r of rows) {
       if (r.manual) continue;
-      const existing = map.get(r.supplier) || [];
+      const name = supplierName(r.supplier);
+      const existing = map.get(name) || [];
       existing.push(r);
-      map.set(r.supplier, existing);
+      map.set(name, existing);
     }
 
     const list: SupplierSummary[] = [];
-    for (const [code, sRows] of map) {
+    for (const [name, sRows] of map) {
       list.push({
-        code,
-        name: supplierName(code),
+        code: name, // use name as the key (not individual supplier code)
+        name,
         rows: sRows.length,
         countries: [...new Set(sRows.map(r => r.country))],
         types: [...new Set(sRows.map(r => r.type))],
@@ -63,7 +65,8 @@ export function SupplierView({ rows }: { rows: Row[] }) {
 
   const selectedRows = useMemo(() => {
     if (!selected) return [];
-    let filtered = rows.filter(r => r.supplier === selected);
+    // Match all supplier codes whose resolved name equals the selected name
+    let filtered = rows.filter(r => !r.manual && supplierName(r.supplier) === selected);
     if (typeFilter !== 'All') filtered = filtered.filter(r => r.type === typeFilter);
     if (countryFilter !== 'All') filtered = filtered.filter(r => r.country === countryFilter);
     return filtered.sort((a, b) => a.city.localeCompare(b.city) || a.vehicle.localeCompare(b.vehicle));
