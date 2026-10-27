@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import type { Row, Country, RateType, Stats } from '@/lib/data';
-import { CITIES, CLASS_ORDER, ROUTES, SELF_DRIVE_DURATIONS, stats, fmt, monthLabel, shortVehicle, classOf, getCurrency, CITY_CURRENCY } from '@/lib/data';
+import { CITIES, CLASS_ORDER, ROUTES, SELF_DRIVE_DURATIONS, DAILY_DETAILS, stats, fmt, monthLabel, shortVehicle, classOf, getCurrency, CITY_CURRENCY } from '@/lib/data';
 import { Strip } from './Strip';
 import { Trend } from './Trend';
 import { cap } from '@/lib/claude';
@@ -34,7 +34,7 @@ export function RateCard({ rows, includeManual, setIncludeManual, manualCount }:
 
   const cur = getCurrency(country, city);
   const base = useMemo(() => {
-    let filtered = rows.filter(r => r.country === country && r.type === type && (includeManual || !r.manual) && (type === 'Daily' || route === ALL || r.detail === route));
+    let filtered = rows.filter(r => r.country === country && r.type === type && (includeManual || !r.manual) && (route === ALL || r.detail === route));
     if (period === '3m') {
       const recent = allMonths.slice(-3);
       filtered = filtered.filter(r => recent.includes(r.month));
@@ -89,7 +89,7 @@ export function RateCard({ rows, includeManual, setIncludeManual, manualCount }:
     if (!downloads) return;
     const head = ['Country', 'City', 'Booking type', 'Route', 'Vehicle', 'Class', 'Bookings', 'Lowest', 'Median', 'Highest', 'Currency', 'Latest booking'];
     const lines = [head.join(',')];
-    ladder.forEach(l => lines.push([country, city === ALL ? 'All' : city, type, type === 'Daily' ? '12 hrs / full day' : type === 'Self-drive' ? (route === ALL ? 'All durations' : route) : (route === ALL ? 'All' : route), `"${l.n}"`, l.k, l.s.n, Math.round(l.s.min), Math.round(l.s.median), Math.round(l.s.max), getCurrency(country, city === ALL ? undefined : city), monthLabel(l.s.latest)].join(',')));
+    ladder.forEach(l => lines.push([country, city === ALL ? 'All' : city, type, type === 'Daily' ? (route === ALL ? 'All' : route) : type === 'Self-drive' ? (route === ALL ? 'All durations' : route) : (route === ALL ? 'All' : route), `"${l.n}"`, l.k, l.s.n, Math.round(l.s.min), Math.round(l.s.median), Math.round(l.s.max), getCurrency(country, city === ALL ? undefined : city), monthLabel(l.s.latest)].join(',')));
     try { await downloads.save({ filename: `Fleet rates ${country} ${type} ${city === ALL ? 'all cities' : city}.csv`, data: lines.join('\n') }); } catch { /* viewer declined */ }
   }
 
@@ -111,6 +111,11 @@ export function RateCard({ rows, includeManual, setIncludeManual, manualCount }:
           {type === 'Self-drive' && (
             <div className="chips" role="radiogroup" aria-label="Rental duration">
               {[ALL, ...SELF_DRIVE_DURATIONS].map(r => <button key={r} role="radio" aria-checked={route === r} className={route === r ? 'on' : ''} onClick={() => setRoute(r)}>{r === ALL ? 'All durations' : r}</button>)}
+            </div>
+          )}
+          {type === 'Daily' && (
+            <div className="chips" role="radiogroup" aria-label="Daily detail">
+              {[ALL, ...DAILY_DETAILS].map(r => <button key={r} role="radio" aria-checked={route === r} className={route === r ? 'on' : ''} onClick={() => setRoute(r)}>{r === ALL ? 'All' : r}</button>)}
             </div>
           )}
         </div>
@@ -168,7 +173,7 @@ export function RateCard({ rows, includeManual, setIncludeManual, manualCount }:
             <section className="hero">
               <div className="hero-head">
                 <div>
-                  <p className="hero-kicker">{type === 'Daily' ? 'Daily rate, 12 hrs incl. driver & fuel' : type === 'Self-drive' ? `Self-drive rental${route !== ALL ? `, ${route.toLowerCase()}` : ''}` : `One-way transfer${route !== ALL ? `, ${route.toLowerCase()}` : ''}`} in {cityName}</p>
+                  <p className="hero-kicker">{type === 'Daily' ? `Daily rate${route !== ALL ? `, ${route}` : ''} incl. driver & fuel` : type === 'Self-drive' ? `Self-drive rental${route !== ALL ? `, ${route.toLowerCase()}` : ''}` : `One-way transfer${route !== ALL ? `, ${route.toLowerCase()}` : ''}`} in {cityName}</p>
                   <h2 className="hero-title">{vehicle}</h2>
                   <p className="hero-class">{classOf(vehicle)}</p>
                 </div>

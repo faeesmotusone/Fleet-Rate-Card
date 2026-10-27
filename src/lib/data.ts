@@ -15,6 +15,7 @@ export const CITIES: Record<Country, string[]> = DATA.cities;
 export const CITY_CURRENCY: Record<string, string> = DATA.cityCurrency ?? {};
 export const CLASS_ORDER = ['Economy Sedan', 'Sedan', 'Executive Sedan', 'Luxury Sedan', 'SUV', 'Luxury SUV', 'Van', 'Minibus', 'Coach', 'Utility'];
 export const ROUTES = ['Airport', 'In-city', 'Intercity'];
+export const DAILY_DETAILS = ['12 hrs', 'Extra hour'];
 export const SELF_DRIVE_DURATIONS = ['Daily', 'Weekly', 'Monthly'];
 
 /** Get the display currency for a country + city combination */

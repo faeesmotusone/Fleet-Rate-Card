@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import type { Country, RateType } from '@/lib/data';
-import { CLASS_ORDER, ROUTES, SELF_DRIVE_DURATIONS, fmt, monthLabel, getCurrency } from '@/lib/data';
+import { CLASS_ORDER, ROUTES, SELF_DRIVE_DURATIONS, DAILY_DETAILS, fmt, monthLabel, getCurrency } from '@/lib/data';
 import { supabase } from '@/lib/supabase';
 import type { ManualRate } from '@/lib/supabase';
 
@@ -111,7 +111,7 @@ export function AddRate({ entries, setEntries, dbVehicles, dbCities }: {
     setSaving(true); setMsg(null);
     const { error } = await supabase.from('manual_rates').insert({
       country: f.country, city: f.city, type: f.type,
-      detail: f.type === 'Daily' ? '12 hrs' : f.type === 'Self-drive' ? f.detail || 'Daily' : f.detail,
+      detail: f.type === 'Daily' ? (f.detail || '12 hrs') : f.type === 'Self-drive' ? f.detail || 'Daily' : f.detail,
       vehicle: f.vehicle, rate, currency: cur,
       month: f.month, po: f.po.trim() || null,
       note: f.note.trim().slice(0, 200) || null,
@@ -188,6 +188,10 @@ export function AddRate({ entries, setEntries, dbVehicles, dbCities }: {
                 <option value="Daily">Daily, 12 hrs incl. driver & fuel</option>
                 <option value="Transfer">One-way transfer</option>
               </select></label>
+            {f.type === 'Daily' && <label>Detail
+              <select value={f.detail} onChange={e => set('detail', e.target.value)}>
+                {DAILY_DETAILS.map(d => <option key={d}>{d}</option>)}
+              </select></label>}
             {f.type === 'Transfer' && <label>Route
               <select value={f.detail} onChange={e => set('detail', e.target.value)}>
                 {ROUTES.map(r => <option key={r}>{r}</option>)}
@@ -231,7 +235,7 @@ export function AddRate({ entries, setEntries, dbVehicles, dbCities }: {
                     <tr key={e.id}>
                       <td>{e.vehicle}{e.note && <div className="muted small">{e.note}</div>}</td>
                       <td>{e.city}, {e.country}</td>
-                      <td>{e.type === 'Daily' ? 'Daily' : e.type === 'Self-drive' ? `Self-drive, ${e.detail.toLowerCase()}` : `Transfer, ${e.detail.toLowerCase()}`}</td>
+                      <td>{e.type === 'Daily' ? `Daily, ${e.detail}` : e.type === 'Self-drive' ? `Self-drive, ${e.detail.toLowerCase()}` : `Transfer, ${e.detail.toLowerCase()}`}</td>
                       <td className="num">{fmt(e.rate)} {e.currency}</td>
                       <td>{monthLabel(e.month)}{e.po && <div className="muted small">{e.po}</div>}</td>
                       <td>{e.added_by || '\u2014'}</td>
@@ -261,7 +265,7 @@ export function AddRate({ entries, setEntries, dbVehicles, dbCities }: {
                     <tr key={e.id}>
                       <td>{e.vehicle}{e.note && <div className="muted small">{e.note}</div>}</td>
                       <td>{e.city}, {e.country}</td>
-                      <td>{e.type === 'Daily' ? 'Daily' : e.type === 'Self-drive' ? `Self-drive, ${e.detail.toLowerCase()}` : `Transfer, ${e.detail.toLowerCase()}`}</td>
+                      <td>{e.type === 'Daily' ? `Daily, ${e.detail}` : e.type === 'Self-drive' ? `Self-drive, ${e.detail.toLowerCase()}` : `Transfer, ${e.detail.toLowerCase()}`}</td>
                       <td className="num">{fmt(e.rate)} {e.currency}</td>
                       <td>{monthLabel(e.month)}{e.po && <div className="muted small">{e.po}</div>}</td>
                       <td>{e.added_by || '\u2014'}</td>
